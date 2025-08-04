@@ -2,10 +2,18 @@
 
 import streamlit as st
 import ee
-import geemap.foliumap as geemap
+import folium
+from streamlit_folium import st_folium
 import matplotlib
+import json
 
-geemap.ee_initialize(project="ee-open-natural-ecosystems")
+# Load credentials from secrets
+service_account_info = st.secrets["gcp_account"]
+credentials = ee.ServiceAccountCredentials(
+    service_account_info["client_email"],
+    key_data=json.dumps(dict(service_account_info))
+)
+ee.Initialize(credentials)
 
 st.set_page_config(layout="wide", page_title="India's ONE | Thematic Map")
 
@@ -15,12 +23,6 @@ st.sidebar.info(
     [https://github.com/openlandcover/one7types](https://github.com/openlandcover/one7types)
     """
 )
-
-# st.sidebar.title("Contact")
-# st.sidebar.info(
-#     """
-#     """
-# )
 
 st.sidebar.title("Terms of Use")
 st.sidebar.markdown(
@@ -76,7 +78,6 @@ def app():
         col52.markdown("""
             Areas with no trees and little or no ground vegetation.
             Ground vegetation, if it occurs, is sparsely distributed.""")
-        # col2.markdown(<div style="text-align: right"> Forest, agriculture, built </div>)
         col61, col62 = st.columns([1, 4])
         col61.markdown("**_Open Savanna_**")
         col62.markdown("""
@@ -95,47 +96,66 @@ def app():
             Tree cover is moderate. Large openings in the tree canopy cover remain,
             and the understorey is predominantly grasses.""")
 
-    m = geemap.Map(center=(21, 79), zoom=5.2, control_scale=True)
-
+    # Prepare Earth Engine Image and remap as before
     mapRaster = ee.Image("projects/ee-open-natural-ecosystems/assets/publish/onesWith7Classes/landcover_hier")
     l2Labels = mapRaster.select("l2LabelNum") \
         .remap([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                [1, 1, 6, 1, 3, 2, 4, 5, 7,  8,  9,  1])
-    l1Labels = mapRaster.select("l1LabelNum") \
-        .remap([200, 100], [1, 0])
+    # l1Labels = mapRaster.select("l1LabelNum").remap([200, 100], [1, 0])  # Not used below
 
-    oneTypeslegendDict = {  "Others": matplotlib.colors.cnames["black"],
-                            "Forest": matplotlib.colors.cnames["darkgreen"],
-                              "Dune": matplotlib.colors.cnames["khaki"],
-                            "Ravine": matplotlib.colors.cnames["fuchsia"],
-                            "Saline": matplotlib.colors.cnames["lightsteelblue"],
-        "Bare or sparsely vegetated": matplotlib.colors.cnames["beige"],
-                      "Open Savanna": matplotlib.colors.cnames["yellow"],
-                     "Shrub Savanna": matplotlib.colors.cnames["goldenrod"],
-                  "Woodland Savanna": matplotlib.colors.cnames["greenyellow"]
-    }
-    oneTypes_vis_params = {
+    # Define palette using matplotlib colour names
+    palette = [
+        matplotlib.colors.cnames["black"],         # Others
+        matplotlib.colors.cnames["darkgreen"],     # Forest
+        matplotlib.colors.cnames["khaki"],         # Dune
+        matplotlib.colors.cnames["fuchsia"],       # Ravine
+        matplotlib.colors.cnames["lightsteelblue"],# Saline
+        matplotlib.colors.cnames["beige"],         # Bare/sparsely veg.
+        matplotlib.colors.cnames["yellow"],        # Open Savanna
+        matplotlib.colors.cnames["goldenrod"],     # Shrub Savanna
+        matplotlib.colors.cnames["greenyellow"],   # Woodland Savanna
+    ]
+
+    vis_params = {
         "min": 1,
         "max": 9,
-        "palette": list(oneTypeslegendDict.values()),
+        "palette": palette,
     }
-    onelegendDict = {"Non-ONE": "#1a2b2b",
-                         "ONE": matplotlib.colors.cnames["navajowhite"]}
-    one_vis_params = {
-        "min": 0,
-        "max": 1,
-        "palette": list(onelegendDict.values()),
-    }
-    
-    m.add_basemap("SATELLITE")
-    # left_layer = geemap.ee_tile_layer(l1Labels, one_vis_params, name = "ONE")
-    # right_layer = geemap.ee_tile_layer(l2Labels, oneTypes_vis_params, name = "Types of ONE")
-    # m.split_map(left_layer, right_layer)
-    # m.add_legend(title = "ONE types", legend_dict = oneTypeslegendDict, draggable = False)
-    # m.add_legend(title = "ONE", legend_dict = onelegendDict, position = "bottomleft", draggable = False)
-    m.addLayer(l2Labels, oneTypes_vis_params, "ONE")
-    m.add_legend(title = "ONE types", legend_dict = oneTypeslegendDict, draggable = False)
 
-    m.to_streamlit(height = 768)
+    # Get EE map tile for folium
+    map_id_dict = ee.Image(l2Labels).getMapId(vis_params)
+
+    # Create folium map
+    m = folium.Map(location=[21, 79], zoom_start=5, control_scale=True, tiles='CartoDB positron')
+
+    # Add EE Image as tile layer to folium map
+    folium.raster_layers.TileLayer(
+        tiles=map_id_dict['tile_fetcher'].url_format,
+        attr='Google Earth Engine',
+        name='ONE Types',
+        overlay=True,
+        control=True,
+        opacity=0.7
+    ).add_to(m)
+
+    folium.LayerControl().add_to(m)
+
+    # Optional: Add legend manually via Streamlit
+    with st.expander("Show map legend"):
+        st.markdown("""
+        <div style='display: flex; flex-direction: column; gap: 4px;'>
+            <span><span style='background-color: black; display:inline-block; width:15px; height:15px;'></span> Others</span>
+            <span><span style='background-color: darkgreen; display:inline-block; width:15px; height:15px;'></span> Forest</span>
+            <span><span style='background-color: khaki; display:inline-block; width:15px; height:15px;'></span> Dune</span>
+            <span><span style='background-color: fuchsia; display:inline-block; width:15px; height:15px;'></span> Ravine</span>
+            <span><span style='background-color: lightsteelblue; display:inline-block; width:15px; height:15px;'></span> Saline</span>
+            <span><span style='background-color: beige; display:inline-block; width:15px; height:15px;'></span> Bare or sparsely vegetated</span>
+            <span><span style='background-color: yellow; display:inline-block; width:15px; height:15px;'></span> Open Savanna</span>
+            <span><span style='background-color: goldenrod; display:inline-block; width:15px; height:15px;'></span> Shrub Savanna</span>
+            <span><span style='background-color: greenyellow; display:inline-block; width:15px; height:15px;'></span> Woodland Savanna</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st_folium(m, height=768, width=1024)
 
 app()
