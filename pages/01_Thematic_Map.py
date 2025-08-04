@@ -126,7 +126,7 @@ def app():
     map_id_dict = ee.Image(l2Labels).getMapId(vis_params)
 
     # Create folium map
-    m = folium.Map(location=[21, 79], zoom_start=5, control_scale=True, tiles='CartoDB positron')
+    m = folium.Map(location=[21, 79], zoom_start=5, control_scale=True, tiles=None)
 
     # Add EE Image as tile layer to folium map
     folium.raster_layers.TileLayer(
