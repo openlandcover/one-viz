@@ -138,6 +138,14 @@ def app():
         opacity=0.7
     ).add_to(m)
 
+    folium.TileLayer(
+        tiles="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+        attr="Google Satellite",
+        name="SATELLITE",
+        overlay=False,
+        control=True
+    ).add_to(m)
+
     folium.LayerControl().add_to(m)
 
     # Optional: Add legend manually via Streamlit
