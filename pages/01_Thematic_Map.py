@@ -2,8 +2,7 @@
 
 import streamlit as st
 import ee
-import folium
-from streamlit_folium import st_folium
+import geemap.foliumap as geemap
 import matplotlib
 import json
 
@@ -119,6 +118,7 @@ def app():
     vis_params = {
         "min": 1,
         "max": 9,
+        "opacity": 0.7,
         "palette": palette,
     }
 
@@ -126,27 +126,11 @@ def app():
     map_id_dict = ee.Image(l2Labels).getMapId(vis_params)
 
     # Create folium map
-    m = folium.Map(location=[21, 79], zoom_start=5, control_scale=True, tiles=None)
+    m = geemap.Map(center=(21, 79), zoom=5.2, control_scale=True)
+    m.add_basemap("SATELLITE")
+    m.addLayer(ee.Image(l2Labels), vis_params, "ONE Types")
 
-    # Add EE Image as tile layer to folium map
-    folium.raster_layers.TileLayer(
-        tiles=map_id_dict['tile_fetcher'].url_format,
-        attr='Google Earth Engine',
-        name='ONE Types',
-        overlay=True,
-        control=True,
-        opacity=0.7
-    ).add_to(m)
 
-    folium.TileLayer(
-        tiles="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
-        attr="Google Satellite",
-        name="SATELLITE",
-        overlay=False,
-        control=True
-    ).add_to(m)
-
-    folium.LayerControl().add_to(m)
 
     # Optional: Add legend manually via Streamlit
     with st.expander("Show map legend"):
@@ -164,6 +148,6 @@ def app():
         </div>
         """, unsafe_allow_html=True)
 
-    st_folium(m, height=768, width=1024)
+    m.to_streamlit(height = 768)
 
 app()
