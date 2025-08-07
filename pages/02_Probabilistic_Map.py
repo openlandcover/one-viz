@@ -77,7 +77,7 @@ def app():
 
     m.addLayer(oneAgrOthRgb, {"min": 0, "max": 1}, "Agri-ONE-Forest probabilities")
 
-    m.to_streamlit(height = 768)
+    m.to_streamlit(height = 768, width=1024)
 
     st.markdown(
         """
