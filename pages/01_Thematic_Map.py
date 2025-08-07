@@ -148,6 +148,6 @@ def app():
         </div>
         """, unsafe_allow_html=True)
 
-    m.to_streamlit(height = 768)
+    m.to_streamlit(height = 768, width=1024)
 
 app()
