@@ -121,6 +121,17 @@ def app():
         "opacity": 0.7,
         "palette": palette,
     }
+    
+    oneTypeslegendDict = {  "Others": matplotlib.colors.cnames["black"],
+                            "Forest": matplotlib.colors.cnames["darkgreen"],
+                              "Dune": matplotlib.colors.cnames["khaki"],
+                            "Ravine": matplotlib.colors.cnames["fuchsia"],
+                            "Saline": matplotlib.colors.cnames["lightsteelblue"],
+        "Bare or sparsely vegetated": matplotlib.colors.cnames["beige"],
+                      "Open Savanna": matplotlib.colors.cnames["yellow"],
+                     "Shrub Savanna": matplotlib.colors.cnames["goldenrod"],
+                  "Woodland Savanna": matplotlib.colors.cnames["greenyellow"]
+    }
 
     # Get EE map tile for folium
     map_id_dict = ee.Image(l2Labels).getMapId(vis_params)
@@ -129,6 +140,7 @@ def app():
     m = geemap.Map(center=(21, 79), zoom=5.2, control_scale=True)
     m.add_basemap("SATELLITE")
     m.addLayer(ee.Image(l2Labels), vis_params, "ONE Types")
+    m.add_legend(title = "ONE types", legend_dict = oneTypeslegendDict, draggable = False)
 
 
 
