@@ -144,21 +144,21 @@ def app():
 
 
 
-    # Optional: Add legend manually via Streamlit
-    with st.expander("Show map legend"):
-        st.markdown("""
-        <div style='display: flex; flex-direction: column; gap: 4px;'>
-            <span><span style='background-color: black; display:inline-block; width:15px; height:15px;'></span> Others</span>
-            <span><span style='background-color: darkgreen; display:inline-block; width:15px; height:15px;'></span> Forest</span>
-            <span><span style='background-color: khaki; display:inline-block; width:15px; height:15px;'></span> Dune</span>
-            <span><span style='background-color: fuchsia; display:inline-block; width:15px; height:15px;'></span> Ravine</span>
-            <span><span style='background-color: lightsteelblue; display:inline-block; width:15px; height:15px;'></span> Saline</span>
-            <span><span style='background-color: beige; display:inline-block; width:15px; height:15px;'></span> Bare or sparsely vegetated</span>
-            <span><span style='background-color: yellow; display:inline-block; width:15px; height:15px;'></span> Open Savanna</span>
-            <span><span style='background-color: goldenrod; display:inline-block; width:15px; height:15px;'></span> Shrub Savanna</span>
-            <span><span style='background-color: greenyellow; display:inline-block; width:15px; height:15px;'></span> Woodland Savanna</span>
-        </div>
-        """, unsafe_allow_html=True)
+    # # Optional: Add legend manually via Streamlit
+    # with st.expander("Show map legend"):
+    #     st.markdown("""
+    #     <div style='display: flex; flex-direction: column; gap: 4px;'>
+    #         <span><span style='background-color: black; display:inline-block; width:15px; height:15px;'></span> Others</span>
+    #         <span><span style='background-color: darkgreen; display:inline-block; width:15px; height:15px;'></span> Forest</span>
+    #         <span><span style='background-color: khaki; display:inline-block; width:15px; height:15px;'></span> Dune</span>
+    #         <span><span style='background-color: fuchsia; display:inline-block; width:15px; height:15px;'></span> Ravine</span>
+    #         <span><span style='background-color: lightsteelblue; display:inline-block; width:15px; height:15px;'></span> Saline</span>
+    #         <span><span style='background-color: beige; display:inline-block; width:15px; height:15px;'></span> Bare or sparsely vegetated</span>
+    #         <span><span style='background-color: yellow; display:inline-block; width:15px; height:15px;'></span> Open Savanna</span>
+    #         <span><span style='background-color: goldenrod; display:inline-block; width:15px; height:15px;'></span> Shrub Savanna</span>
+    #         <span><span style='background-color: greenyellow; display:inline-block; width:15px; height:15px;'></span> Woodland Savanna</span>
+    #     </div>
+    #     """, unsafe_allow_html=True)
 
     m.to_streamlit(height = 768, width=1024)
 
