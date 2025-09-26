@@ -25,7 +25,6 @@ try:
         )
         ee.Initialize(credentials)
         EE_INITIALIZED = True
-        st.success("✅ Authenticated with Google Earth Engine (Service Account)")
 
 except Exception as cloud_auth_error:
     # Fallback: Try local authentication only if enabled
@@ -34,7 +33,6 @@ except Exception as cloud_auth_error:
             ee.Authenticate()  # This will prompt user to authenticate if needed
             ee.Initialize()
             EE_INITIALIZED = True
-            st.success("✅ Authenticated with Google Earth Engine (Local Account)")
 
         except Exception as local_auth_error:
             st.error(f"""
@@ -153,8 +151,8 @@ def app():
     # Note: Split map functionality commented out - using single RGB composite instead
     m.addLayer(oneAgrOthRgb, {"min": 0, "max": 1}, "Agri-ONE-Forest probabilities")
 
-    # Display the interactive map in Streamlit
-    m.to_streamlit(height = 768, width=1024)
+    # Display the interactive map in Streamlit at full width
+    m.to_streamlit(height = 768)
 
     # Explanation of the RGB probability visualization
     st.markdown(
