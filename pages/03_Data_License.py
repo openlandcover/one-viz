@@ -1,40 +1,36 @@
-# apps/new_app.py
+# Data License page for India's Open Natural Ecosystems (ONE)
+# Displays information about source code, data access, and licensing
+# Includes interactive data tables with band information and metadata
 
 import pandas as pd
 import streamlit as st
 
+# Configure Streamlit page layout and metadata
 st.set_page_config(layout="wide", page_title="India's ONE | Code, Data & License")
 
-# I think the sectionb below may be better done with st_tabs
-# https://docs.streamlit.io/library/api-reference/layout/st.tabs
-
+# Navigation bar with page links
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.page_link("app.py", label="Home", icon="🏠", use_container_width=True)
+    st.page_link("app.py", label="Home", icon="🏠", width="stretch")
 with col2:
-    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", use_container_width=True)
+    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", width="stretch")
 with col3:
-    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", use_container_width=True)
+    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", width="stretch")
 with col4:
-    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", use_container_width=True)
+    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", width="stretch")
 with col5:
-    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", use_container_width=True)
+    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", width="stretch")
 
 st.divider()
 
+# Sidebar content with project information
 st.sidebar.title("Project Repository")
 st.sidebar.info(
     """
     [https://github.com/openlandcover/one7types](https://github.com/openlandcover/one7types)
     """
 )
-
-# st.sidebar.title("Contact")
-# st.sidebar.info(
-#     """
-#     """
-# )
 
 st.sidebar.title("Terms of Use")
 st.sidebar.markdown(
@@ -45,21 +41,25 @@ st.sidebar.markdown(
 
 st.sidebar.title("[Contact Us](https://forms.gle/r4NiLoEjVRaHoTE48)")
 
-# Function to style header
+# Helper functions for styling data tables
 def style_header(s):
+    """Apply header styling to dataframe columns"""
     return ['background-color: grey; color: white; font-weight: bold' for _ in s]
 
-# Function to color cells based on another column's values
 def colour_cells(val):
+    """Apply color styling to cells based on values"""
     color = 'black'  # Default text color for better readability
     return f'background-color: {val}; color: {color}'
 
 def app():
-    
+    """Main function to render the data license and information page"""
+
+    # Source code section
     st.write("# Source Code")
     st.write("The source code used to produce the maps and more details about the dataset are available in [a GitHub repository](https://github.com/openlandcover/one7types). The repository contains the code used to train the models and produce the maps. The code is available under the MIT License, which is a permissive open source license. While not required, we would appreciate if you attribute the source if and when you use these data or code.")
     st.info("**Suggested citation:** Pradeep Koulgi & MD Madhusudan (2024). Mapping landcover in India's Open Natural Ecosystems (ONEs). https://github.com/openlandcover/one7types/.")
     
+    # Known issues and limitations section
     st.write("## A word on known issues and limitations")
     st.write("""
              Our maps are a work in progress, and as we made them, we have seen many of their limitations. As we endeavour to improve them, we welcome your feedback and suggestions. 
@@ -76,33 +76,35 @@ def app():
              """)
     
     "&nbsp;"
-    
+
+    # Data access section with GEE information
     st.write("# Data Access")
     st.write("The data are publicly available for use on the Google Earth Engine platform as an image raster at `projects/ee-open-natural-ecosystems/assets/publish/onesWith7Classes/landcover_hier`, from where they may be used directly in further analyses, or select bands can be downloaded for specific areas of interest, as required. Metadata pertaining to this dataset are presented below.")
     st.write("To help you get started, here is a Google Earth Engine [starter script](https://code.earthengine.google.co.in/02585ca79a284e0be81441c24f8653a7) to load and visualise the data. (Note: Google Earth Engine account needed to run this script)")
     
+    # Load and display band metadata from Excel file
     band_names = pd.read_excel("./band_data.xlsx", sheet_name="bandData")
     band_names = band_names.astype(str)
     band_names_styled = band_names.style.apply(style_header, axis=1)
     st.write("## Summary of Bands in the Dataset")
-    st.dataframe(band_names_styled, height = 670, use_container_width=True, hide_index=True)
+    st.dataframe(band_names_styled, height = 670, width="stretch", hide_index=True)
     "&nbsp;"
    
-    # l1_label_num = pd.read_excel("./band_data.xlsx", sheet_name="l1LabelNum")
+    # Display Level 1 classification labels and values
     l1_label_num = pd.read_excel("./band_data.xlsx", sheet_name="l1LabelNum", usecols=["Value", "Label"])
     l1_label_num_styled = l1_label_num.style.apply(style_header, axis=1)
-    # l1_label_num_styled = l1_label_num.style.applymap(colour_cells, subset=['CSS_Colour'])
     st.write("## Band Values")
     st.write("Band: `l1LabelNum` | Level 1 Labels Numeric")
-    st.dataframe(l1_label_num_styled, use_container_width=False, hide_index=True)
+    st.dataframe(l1_label_num_styled, width="content", hide_index=True)
     "&nbsp;"
     
-    # l2_label_num = pd.read_excel("./band_data.xlsx", sheet_name="l2LabelNum")
+    # Display Level 2 classification labels and values
     l2_label_num = pd.read_excel("./band_data.xlsx", sheet_name="l2LabelNum", usecols=["Value", "Label"])
     l2_label_num_styled = l2_label_num.style.apply(style_header, axis=1)
     st.write("Band: `l2LabelNum` | Level 2 Labels Numeric")
     st.dataframe(l2_label_num_styled, height = 460, width = 550,
-            column_config={"Label": st.column_config.Column(label="Label", width="large")}, 
+            column_config={"Label": st.column_config.Column(label="Label", width="large")},
             hide_index=True)
 
+# Execute the main application function
 app()

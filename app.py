@@ -1,20 +1,20 @@
+# Main entry point for India's Open Natural Ecosystems (ONE) mapping application
+# This Streamlit app provides interactive visualization of land cover mapping
+# in India's semi-arid Open Natural Ecosystems
+
 import streamlit as st
 import leafmap.foliumap as leafmap
 
+# Configure the Streamlit page layout and title
 st.set_page_config(layout="wide", page_title="India's ONE")
 
+# Sidebar content with project information and navigation
 st.sidebar.title("Project Repository")
 st.sidebar.info(
     """
     [https://github.com/openlandcover/one7types](https://github.com/openlandcover/one7types)
     """
 )
-
-# st.sidebar.title("Contact")
-# st.sidebar.info(
-#     """
-#     """
-# )
 
 st.sidebar.title("Terms of Use")
 st.sidebar.markdown(
@@ -25,23 +25,26 @@ st.sidebar.markdown(
 
 st.sidebar.title("[Contact Us](https://forms.gle/r4NiLoEjVRaHoTE48)")
 
+# Create navigation bar with page links across 5 columns
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.page_link("app.py", label="Home", icon="🏠", use_container_width=True)
+    st.page_link("app.py", label="Home", icon="🏠", width="stretch")
 with col2:
-    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", use_container_width=True)
+    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", width="stretch")
 with col3:
-    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", use_container_width=True)
+    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", width="stretch")
 with col4:
-    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", use_container_width=True)
+    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", width="stretch")
 with col5:
-    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", use_container_width=True)
+    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", width="stretch")
 
 st.divider()
 
+# Main content section with project title and description
 st.title("Open Land Cover Mapping of India's Semi-arid Open Natural Ecosystems (ONEs)")
 
+# Project overview and context
 st.markdown(
     """
     India is endowed with a diversity of terrestrial biomes. Barring
@@ -67,8 +70,10 @@ st.markdown(
     """
 )
 
+# Display representative image of India's ONEs
 st.image("./ones_of_india.jpg")
 
+# Project philosophy and open data principles
 st.write("# Our Philosophy")
 st.write("We are a generation witnessing unprecedented changes to our lands and waters, deeply impacting humans and other living beings that depend on them. We believe, therefore, that efforts to observe and map the changing fates and fortunes of earth's land cover should, as far as possible, be done in public interest. Hence, these data must not only be publicly and freely accessible, but the methods by which they are produced, too, must be open to public scrutiny. In this belief, we are making not only the outputs of our mapping public and free under a permissive MIT License, but also the input training data we have created, and the source code we have developed and used to produce our maps.")
 

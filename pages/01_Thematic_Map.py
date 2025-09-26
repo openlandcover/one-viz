@@ -1,4 +1,6 @@
-# apps/new_app.py
+# Thematic Map page for India's Open Natural Ecosystems (ONE)
+# Displays interactive classified land cover map using Google Earth Engine
+# Shows discrete categories of land cover types with color-coded visualization
 
 import streamlit as st
 import ee
@@ -6,16 +8,84 @@ import geemap.foliumap as geemap
 import matplotlib
 import json
 
-# Load credentials from secrets
-service_account_info = st.secrets["gcp_account"]
-credentials = ee.ServiceAccountCredentials(
-    service_account_info["client_email"],
-    key_data=json.dumps(dict(service_account_info))
-)
-ee.Initialize(credentials)
+# Configuration for authentication fallback (set to False for production deployment)
+ENABLE_LOCAL_AUTH_FALLBACK = True
 
+# Global variable to track Earth Engine initialization status
+EE_INITIALIZED = False
+
+# Cloud-first authentication with optional local fallback
+try:
+    # Primary: Try service account from Streamlit secrets (for cloud deployment)
+    if "gcp_account" in st.secrets:
+        service_account_info = st.secrets["gcp_account"]
+        credentials = ee.ServiceAccountCredentials(
+            service_account_info["client_email"],
+            key_data=json.dumps(dict(service_account_info))
+        )
+        ee.Initialize(credentials)
+        EE_INITIALIZED = True
+        st.success("✅ Authenticated with Google Earth Engine (Service Account)")
+
+except Exception as cloud_auth_error:
+    # Fallback: Try local authentication only if enabled
+    if ENABLE_LOCAL_AUTH_FALLBACK:
+        try:
+            ee.Authenticate()  # This will prompt user to authenticate if needed
+            ee.Initialize()
+            EE_INITIALIZED = True
+            st.success("✅ Authenticated with Google Earth Engine (Local Account)")
+
+        except Exception as local_auth_error:
+            st.error(f"""
+            **Earth Engine Authentication Required**
+
+            This page requires Google Earth Engine authentication to display maps.
+
+            **For Local Development (Option 1 - Recommended):**
+            1. Run `earthengine authenticate` in your terminal
+            2. Follow the authentication flow in your browser
+            3. Refresh this page
+
+            **For Local Development (Option 2 - Service Account):**
+            1. Create a `.streamlit/secrets.toml` file in your project directory
+            2. Add your Google Earth Engine service account credentials:
+            ```toml
+            [gcp_account]
+            type = "service_account"
+            project_id = "your-project-id"
+            private_key_id = "your-private-key-id"
+            private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
+            client_email = "your-service-account@your-project.iam.gserviceaccount.com"
+            client_id = "your-client-id"
+            auth_uri = "https://accounts.google.com/o/oauth2/auth"
+            token_uri = "https://oauth2.googleapis.com/token"
+            ```
+
+            **For Cloud Deployment:**
+            Add the credentials through Streamlit Cloud's secrets management.
+
+            **Errors:**
+            - Cloud auth: {str(cloud_auth_error)}
+            - Local auth: {str(local_auth_error)}
+            """)
+            EE_INITIALIZED = False
+    else:
+        # Production mode: only show cloud authentication error
+        st.error(f"""
+        **Earth Engine Authentication Required**
+
+        Service account authentication failed. Please configure Google Earth Engine
+        credentials through Streamlit Cloud's secrets management.
+
+        **Error:** {str(cloud_auth_error)}
+        """)
+        EE_INITIALIZED = False
+
+# Configure Streamlit page layout and metadata
 st.set_page_config(layout="wide", page_title="India's ONE | Thematic Map")
 
+# Sidebar content with project information
 st.sidebar.title("Project Repository")
 st.sidebar.info(
     """
@@ -32,24 +102,32 @@ st.sidebar.markdown(
 
 st.sidebar.title("[Contact Us](https://forms.gle/r4NiLoEjVRaHoTE48)")
 
+# Navigation bar with page links
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.page_link("app.py", label="Home", icon="🏠", use_container_width=True)
+    st.page_link("app.py", label="Home", icon="🏠", width="stretch")
 with col2:
-    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", use_container_width=True)
+    st.page_link("pages/01_Thematic_Map.py", label="**Thematic Map**", width="stretch")
 with col3:
-    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", use_container_width=True)
+    st.page_link("pages/02_Probabilistic_Map.py", label="**Probabilistic Map**", width="stretch")
 with col4:
-    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", use_container_width=True)
+    st.page_link("pages/03_Data_License.py", label="**Code, Data & License**", width="stretch")
 with col5:
-    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", use_container_width=True)
+    st.page_link("pages/99_Funding_and_Support.py", label="**Funding and Support**", width="stretch")
 
 st.divider()
 
 def app():
+    """Main function to render the thematic map page"""
     st.title("Thematic Map of Open Natural Ecosystems", anchor = "landcovers-thematic")
 
+    # Check Earth Engine initialization status before proceeding
+    if not EE_INITIALIZED:
+        st.info("Please configure Earth Engine authentication to view the interactive map.")
+        return
+
+    # Expandable section with descriptions of ONE ecosystem types
     with st.expander("**See a brief description of the types of ONE**"):
         col11, col12 = st.columns([1, 4])
         col11.markdown("**_Others_**")
@@ -95,33 +173,37 @@ def app():
             Tree cover is moderate. Large openings in the tree canopy cover remain,
             and the understorey is predominantly grasses.""")
 
-    # Prepare Earth Engine Image and remap as before
+    # Load and process Earth Engine imagery for land cover classification
     mapRaster = ee.Image("projects/ee-open-natural-ecosystems/assets/publish/onesWith7Classes/landcover_hier")
+
+    # Remap Level-2 classification labels to consolidated categories for visualization
+    # Maps from detailed subcategories to main ecosystem types
     l2Labels = mapRaster.select("l2LabelNum") \
         .remap([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                [1, 1, 6, 1, 3, 2, 4, 5, 7,  8,  9,  1])
-    # l1Labels = mapRaster.select("l1LabelNum").remap([200, 100], [1, 0])  # Not used below
 
-    # Define palette using matplotlib colour names
+    # Define color palette using matplotlib color names for each land cover type
     palette = [
-        matplotlib.colors.cnames["black"],         # Others
+        matplotlib.colors.cnames["black"],         # Others (non-natural areas)
         matplotlib.colors.cnames["darkgreen"],     # Forest
-        matplotlib.colors.cnames["khaki"],         # Dune
-        matplotlib.colors.cnames["fuchsia"],       # Ravine
-        matplotlib.colors.cnames["lightsteelblue"],# Saline
-        matplotlib.colors.cnames["beige"],         # Bare/sparsely veg.
+        matplotlib.colors.cnames["khaki"],         # Dune ecosystems
+        matplotlib.colors.cnames["fuchsia"],       # Ravine systems
+        matplotlib.colors.cnames["lightsteelblue"],# Saline areas
+        matplotlib.colors.cnames["beige"],         # Bare/sparsely vegetated
         matplotlib.colors.cnames["yellow"],        # Open Savanna
         matplotlib.colors.cnames["goldenrod"],     # Shrub Savanna
         matplotlib.colors.cnames["greenyellow"],   # Woodland Savanna
     ]
 
+    # Visualization parameters for Earth Engine layer
     vis_params = {
         "min": 1,
         "max": 9,
         "opacity": 0.7,
         "palette": palette,
     }
-    
+
+    # Legend dictionary mapping ecosystem types to colors
     oneTypeslegendDict = {  "Others": matplotlib.colors.cnames["black"],
                             "Forest": matplotlib.colors.cnames["darkgreen"],
                               "Dune": matplotlib.colors.cnames["khaki"],
@@ -133,33 +215,35 @@ def app():
                   "Woodland Savanna": matplotlib.colors.cnames["greenyellow"]
     }
 
-    # Get EE map tile for folium
+    # Get Earth Engine map tile for visualization
     map_id_dict = ee.Image(l2Labels).getMapId(vis_params)
 
-    # Create folium map
+    # Create interactive map centered on India with satellite basemap
     m = geemap.Map(center=(21, 79), zoom=5.2, control_scale=True)
     m.add_basemap("SATELLITE")
     m.addLayer(ee.Image(l2Labels), vis_params, "ONE Types")
-    m.add_legend(title = "ONE types", legend_dict = oneTypeslegendDict, draggable = False)
+    # Note: m.add_legend() commented out due to missing template - using Streamlit legend instead
 
 
 
-    # # Optional: Add legend manually via Streamlit
-    # with st.expander("Show map legend"):
-    #     st.markdown("""
-    #     <div style='display: flex; flex-direction: column; gap: 4px;'>
-    #         <span><span style='background-color: black; display:inline-block; width:15px; height:15px;'></span> Others</span>
-    #         <span><span style='background-color: darkgreen; display:inline-block; width:15px; height:15px;'></span> Forest</span>
-    #         <span><span style='background-color: khaki; display:inline-block; width:15px; height:15px;'></span> Dune</span>
-    #         <span><span style='background-color: fuchsia; display:inline-block; width:15px; height:15px;'></span> Ravine</span>
-    #         <span><span style='background-color: lightsteelblue; display:inline-block; width:15px; height:15px;'></span> Saline</span>
-    #         <span><span style='background-color: beige; display:inline-block; width:15px; height:15px;'></span> Bare or sparsely vegetated</span>
-    #         <span><span style='background-color: yellow; display:inline-block; width:15px; height:15px;'></span> Open Savanna</span>
-    #         <span><span style='background-color: goldenrod; display:inline-block; width:15px; height:15px;'></span> Shrub Savanna</span>
-    #         <span><span style='background-color: greenyellow; display:inline-block; width:15px; height:15px;'></span> Woodland Savanna</span>
-    #     </div>
-    #     """, unsafe_allow_html=True)
+    # Render legend manually using Streamlit HTML (workaround for geemap template issue)
+    st.markdown("### Map Legend")
+    st.markdown("""
+    <div style='display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;'>
+        <span><span style='background-color: black; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Others</span>
+        <span><span style='background-color: darkgreen; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Forest</span>
+        <span><span style='background-color: khaki; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Dune</span>
+        <span><span style='background-color: fuchsia; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Ravine</span>
+        <span><span style='background-color: lightsteelblue; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Saline</span>
+        <span><span style='background-color: beige; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Bare/Sparsely Vegetated</span>
+        <span><span style='background-color: yellow; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Open Savanna</span>
+        <span><span style='background-color: goldenrod; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Shrub Savanna</span>
+        <span><span style='background-color: greenyellow; display:inline-block; width:15px; height:15px; margin-right: 5px;'></span> Woodland Savanna</span>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # Display the interactive map in Streamlit
     m.to_streamlit(height = 768, width=1024)
 
+# Execute the main application function
 app()
